@@ -14,7 +14,7 @@ PP_CLIENT_SECRET="<<client_secret>>"
 
 # Author: https://github.com/JavaScriptDude
 # License: MIT
-# Home: TBD
+# Home: https://github.com/JavaScriptDude/PayPalAuthIntent
 
 """
 
