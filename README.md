@@ -1,4 +1,4 @@
-### PayPalAuthIntent
+## PayPalAuthIntent
 Example of Using PayPal AUTHORIZE Intent Using REST APIs
 
 This tool will simulate Auth Intent and REST calls end to end and includes google-chrome launching, watching and http callbacks from PayPal UI.
