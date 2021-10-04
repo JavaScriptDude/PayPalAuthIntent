@@ -1,6 +1,8 @@
 ## PayPalAuthIntent
 Example of Using PayPal AUTHORIZE Intent Using REST APIs
 
+This tool is intended as a sample for consuming PayPal APIs and for testing.
+
 This tool will simulate Auth Intent and REST calls end to end and includes google-chrome launching, watching and http callbacks from PayPal UI.
 
 This example is coded to have the Order left in APPROVED status after the user clicks `Continue` button. The Authorization (completion) of order is left to the client such as after the user is presented with a final `Confirmation` screen. This is similar to how Spotify utilizes PayPal.
