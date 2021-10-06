@@ -9,12 +9,16 @@ import signal
 import psutil
 import time
 import threading
+import re
 from subprocess import Popen, DEVNULL
 from datetime import datetime
 from pprint import pformat as pf
 from flask import Flask, request, make_response
 from flask_restx import Api as FlaskRestxApi, Resource
 from werkzeug.serving import make_server
+from urllib.parse import urlparse
+
+
 
 browser_pid = None
 
@@ -110,6 +114,7 @@ def aget_list(alias:str, obj, sKey, req:bool=True):
     return aget(alias, obj, sKey, req=req, dtype=list)
 
 def aget(alias:str, obj, sKey, req:bool=True, noBlank:bool=False, dtype=str):
+    v=None
     try:
         v = obj[sKey]
     except:
@@ -134,6 +139,8 @@ def aget(alias:str, obj, sKey, req:bool=True, noBlank:bool=False, dtype=str):
             pass
         elif not isInst(v, dtype, subclass=True):
             raise AssertionError(f'value for key {sKey} in {alias} is not a {dtype.__name__}. Got: {getClassName(v)}')
+
+        if dtype==str: v = v.strip()
     
     return v
 
@@ -331,3 +338,21 @@ def close_proc_if_running(alias, pid):
     if _p.is_running() and not _p.status() == psutil.STATUS_ZOMBIE:
         pc(f"Closing {alias}")
         kill_proc_tree(pid)
+
+RE_VALID_EMAIL = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
+def valid_email(email) -> bool:
+    if re.fullmatch(RE_VALID_EMAIL, email):
+        return True
+    return False
+
+# Validate URL
+def valid_uri(url):
+    try:
+        result = urlparse(url)
+        return all([result.scheme, result.netloc])
+    except:
+        return False
+
+def assertValidUrl(alias, url):
+    if not valid_uri(url):
+        raise AssertionError(f"{alias} is invalid. Please pass valid URL. Got '{url}'")

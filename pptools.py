@@ -35,29 +35,52 @@ class Client(PayPalHttpClient):
         return res['access_token']
 
 
-    # create_order('Acme Anvil Incorporated', 6000, 'http://127.0.0.1:9991/pp_ord_accepted', 'http://127.0.0.1:9991/pp_ord_cancelled')
-    def create_order(self, company_name, amount, return_url, cancel_url):
+    def create_order(self, purchase_units, application_context):
+        
+        # OPTIONAL - Validations (Fail Fast)
+        assert isinstance(purchase_units, dict)\
+            ,f"purchase_units is not a dict. Got {getClassName(purchase_units)}"
+
+        assert isinstance(application_context, dict)\
+            ,f"application_context is not a dict. Got {getClassName(application_context)}"        
+
+        amount = aget_dict('purchase_units', purchase_units, 'amount', True)
+        currency_code = aget('amount', amount, 'currency_code', True, True)
+        value = aget('amount', amount, 'value', True, True)
+
+        # . payee
+        payee = aget_dict('purchase_units', purchase_units, 'payee', False)
+
+        # . brand_name
+        brand_name = aget('application_context', application_context, 'brand_name', False, True)
+        if payee is None:
+            if brand_name == '':
+                pc("WARNING - Merchant block at top of UI will show Test Store because payee and brand_name are not specified")
+        else:
+            payee_email = aget('payee', payee, 'email_address', True, True)
+            assert valid_email(payee_email), f"Email address for payee is invalid. Got '{payee_email}'"
+
+        # . application_context - other
+        aget('application_context', application_context, 'shipping_preference', True, True)
+        aget('application_context', application_context, 'user_action', True, True)
+        return_url = aget('application_context', application_context, 'return_url', True, True)
+        cancel_url = aget('application_context', application_context, 'cancel_url', True, True)
+
+        assertValidUrl('return_url', return_url)
+        assertValidUrl('cancel_url', cancel_url)
+
+        # End Validations
+        
+        
+    
         request = OrdersCreateRequest()
         request.prefer('return=representation')
+
         request.request_body (
             {
-                "intent": "AUTHORIZE",
-                "purchase_units": [
-                    {
-                        "amount": {
-                            "currency_code": "USD",
-                            "value": f"{amount}.00"
-                        }
-                    }
-                ],
-                # https://developer.paypal.com/docs/api/orders/v1/#definition-application_context
-                'application_context': {
-                     'shipping_preference': "NO_SHIPPING" # Removes shipping section
-                    ,'user_action': "CONTINUE"            # Order Status will be APPROVED at callback
-                    ,'brand_name': company_name           # Show in Merchant block at top of window
-                    ,'return_url': return_url             # URL called on `CONTINUE`
-                    ,'cancel_url': cancel_url             # URL called on `Cancel and return ...``
-                }
+                 "intent": "AUTHORIZE"
+                ,"purchase_units": [purchase_units]
+                ,'application_context': application_context
             }
         )
 

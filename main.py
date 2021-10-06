@@ -11,6 +11,7 @@ python3 -m pip install paypalhttp paypal-checkout-serversdk python-dotenv psutil
 # For Environment variables create file `~/.paypal/acmeinc_sandbox/.env` and put into it:
 PP_CLIENT_ID="<<client_id>>"
 PP_CLIENT_SECRET="<<client_secret>>"
+PP_PAYEE_EMAIL="<<email_for_paypal_account>>"
 
 # Author: https://github.com/JavaScriptDude
 # License: MIT
@@ -43,10 +44,32 @@ def main(argv):
     amount = 6000
     pc("Calling PayPal REST API to create Order")
     ord_result = pp_client.create_order(
-         'Acme Anvil Incorporated'
-        ,amount
-        ,f'http://{ws_host}:{ws_port}/pp_ord_accepted'
-        ,f'http://{ws_host}:{ws_port}/pp_ord_cancelled')
+         purchase_units={
+            "amount": {
+                "currency_code": "USD",
+                "value": f"{amount}.00"
+            }
+            # payee - This must be specified so that logo shows up in head of PayPal page
+            # - Note this will only show if application_context has no brand_name AND logo
+            #   is set in PayPal Account -> Account Settings -> Business Information -> Update ...
+            ,'payee': {'email_address': os.environ['PP_PAYEE_EMAIL']}
+        }
+        # https://developer.paypal.com/docs/api/orders/v1/#definition-application_context
+        ,application_context={
+             # Remove shipping section
+             'shipping_preference': "NO_SHIPPING" 
+             # Order Status will be APPROVED at callback
+            ,'user_action': "CONTINUE"   
+             # Optional - Show in text at top of window
+             # - Note this will only show if purchase_unit has no payee
+            # ,'brand_name': 'Acme Anvil Incorporated'     
+             # URL called on `CONTINUE`      
+            ,'return_url': f'http://{ws_host}:{ws_port}/pp_ord_accepted'        
+             # URL called on `Cancel and return ...``     
+            ,'cancel_url': f'http://{ws_host}:{ws_port}/pp_ord_cancelled'             
+        }
+    )
+
 
     pp_ordid = aget('ord_result', ord_result, 'id', True, True)
 
